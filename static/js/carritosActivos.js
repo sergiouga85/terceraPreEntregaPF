@@ -40,26 +40,57 @@ function loadCarritos() {
 
 
 function selectCarrito(e) {
-    if (e.target.id != '') {
-        console.log(e.target.id)
-        //document.getElementById('carritoActivo').value = e.target.id
-        localStorage.setItem('carrito', JSON.stringify(e.target.id))
-        //console.log(document.getElementById('carritoActivo').value)
-        window.location = '/productos'
-    }
+  if (e.target.id != '') {
+    console.log(e.target.id)
+    //document.getElementById('carritoActivo').value = e.target.id
+    localStorage.setItem('carrito', JSON.stringify(e.target.id))
+    //console.log(document.getElementById('carritoActivo').value)
+    window.location = '/productos'
+  }
 }
 
-function newCarrito(e) {
-    fetch(rutaFetchNewCarrito, {
-        method: 'POST'
-    })
-        .then(resp => resp.json())
-        .then(data => {
-            const newID = data._id
-            console.log(newID)
-            localStorage.setItem('carrito', JSON.stringify(newID))
-            window.location = '/productos'
-        })
+async function newCarrito(e) {
+
+  try {
+
+    const res = await fetch('http://localhost:8080/api/sessions/current',
+      {
+        method: 'GET'
+      })
+    if (res.status !== 200) {
+      alert('necesitas loguearte para ver esta info!')
+      return (window.location.href = '/login')
+    }
+
+    const result = await res.json()
+    const usuario = result.payload
+    const user = usuario.username
+    console.log(user)
+
+    const response = await fetch('http://localhost:8080/api/carts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user: user }),
+    });
+
+    if (response.ok) {
+      // El mensaje se ha enviado correctamente
+      console.log('Mensaje enviado con éxito');
+
+      const newID = response._id
+      console.log(newID)
+      localStorage.setItem('carrito', JSON.stringify(newID))
+      window.location = '/productos'
+
+    } else {
+      console.error('Error al enviar el mensaje:', response.status)
+
+    }
+  } catch (error) {
+    console.error('Error en la solicitud:', error);
+  }
 
 }
 

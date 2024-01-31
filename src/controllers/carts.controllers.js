@@ -1,5 +1,8 @@
 import { cartDao } from '../dao/index.js';
 import {CartService} from '../services/cart.service.js';
+import { TicketService } from '../services/ticket.service.js';
+import { productDao } from '../dao/index.js';
+import { v4 as uuidv4 } from 'uuid';
 
 
 // Obtener todos los carritos
@@ -84,12 +87,87 @@ export const eliminarProductoDelCarrito = async (req, res) => {
     }
 }
 
-export const purchaseCart = async (req, res) => {
+export const  purchaseCart= async (req, res)=> {
     try {
-      const { status, response } = await CartService.purchaseCart(req.params.cid);
-      res.status(status).json(response);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-};
+      const cartId = req.params.cid;
+      const cart = await cartDao.obtenerCarritoPorId(cartId);
 
+      const failedProductIds = [];
+
+      const createTicket = async () => {
+        const ticketData = {
+          code: generateUniqueCode(),
+          purchase_datetime: new Date(),
+          amount: cart.totalAmount,
+          purchaser: cart.userEmail,
+        };
+
+        const ticket = await TicketService.generateTicket(
+          ticketData.code,
+          ticketData.purchase_datetime,
+          ticketData.amount,
+          ticketData.purchaser
+        );
+
+        return ticket;
+      };
+
+      const updateProductStock = async (productId, quantity) => {
+        const product = await productDao.obtenerProductoPorId(productId);
+
+        if (product.stock >= quantity) {
+          product.stock -= quantity;
+          await product.save();
+          return true;
+        } else {
+          failedProductIds.push(productId);
+          return false;
+        }
+      };
+
+    const processPurchase = async () => {
+        const ticket = await createTicket();
+
+        for (const cartProduct of cart.carrito) {
+          const success = await updateProductStock(
+            cartProduct.productID,
+            cartProduct.cant
+          );
+
+          if (!success) {
+            continue;
+          }
+
+         
+        }
+
+        // Update the cart with failed products
+        cart.carrito = cart.carrito.filter((cartProduct) =>
+        failedProductIds.includes(cartProduct.productID)
+        );
+        await cartDao.saveCart(cart);
+  
+        return { ticket, failedProductIds };
+    };
+
+      const result = await processPurchase();
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+}
+
+function generateUniqueCode() {
+    return uuidv4();
+}
+
+
+
+
+  
+      
+  
+        
+     

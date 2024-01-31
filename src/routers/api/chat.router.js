@@ -7,5 +7,5 @@ import { passportAuth } from '../../middlewares/passport.js';
 export const chatRouter = express.Router();
 
 // Rutas para el chat
-chatRouter.post('/mensaje',chatController);
+chatRouter.post('/mensaje',passportAuth,usersOnly,chatController);
 

@@ -10,7 +10,8 @@ const schemaCarrito = new Schema({
       cant: { type: Number },
     },
   ],
-  userId: { type: String, required: true }, // Agregamos un campo para almacenar el ID del usuario asociado al carrito
+  user:{ type: String, required: true }, // Agregamos un campo para almacenar el ID del usuario asociado al carrito
+  totalAmount:{type:Number, default:0},
 }, {
   strict: 'throw',
   versionKey: false,
@@ -29,15 +30,6 @@ export const Carrito = model('carrito', schemaCarrito);
 
 export class CartDao {
 
-
-  async getCartById(cartId) {
-    try{
-      const cart= await Carrito.findById(cartId).populate('carrito.productID');
-      return cart
-    }catch(error){
-      throw new Error(`Error al obtener los carritos: ${error.message}`);
-    }
-  }
 
 // Obtener todos los carritos
   async obtenerCarritos(){
@@ -65,7 +57,7 @@ export class CartDao {
 // Crear un nuevo carrito
   async crearCarrito(nuevoCarritoData){
     try {
-        const newCarrito = await Carrito.create(nuevoCarritoData);
+        const newCarrito = await Carrito.create({user:nuevoCarritoData.user});
         return newCarrito;
     } catch (error) {
         throw new Error(`Error al crear un nuevo carrito: ${error.message}`);
@@ -148,37 +140,11 @@ async actualizarCantidadProductoEnCarrito(carritoId, productoId, nuevaCantidad) 
     }
   };
 
-
-  async finalizePurchase(cartId) {
+  async saveCart(cart) {
     try {
-      const cart = await Carrito.findById(cartId).populate('carrito.productID');
-      if (!cart) {
-        throw new Error('Carrito no encontrado');
-      }
-  
-      await processCartProducts(cart.products);
-  
-      cart.products = [];
       await cart.save();
-  
-      return cart;
     } catch (error) {
-      console.error('Error al finalizar la compra:', error);
-      throw error;
-    }
-  }
-  
-  async  processCartProducts(products) {
-    for (const item of products) {
-      const product = item.product;
-      const requestedQuantity = item.quantity;
-  
-      if (product.stock >= requestedQuantity) {
-        product.stock -= requestedQuantity;
-        await product.save();
-      } else {
-        throw new Error(`Stock insuficiente para ${product.name}`);
-      }
+      throw new Error('Error saving cart');
     }
   }
 

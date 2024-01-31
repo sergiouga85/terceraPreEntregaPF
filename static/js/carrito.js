@@ -173,17 +173,17 @@ async function realizarCompra() {
     try {
 
       const cartId = JSON.parse(localStorage.getItem('carrito'))  
-
+      console.log(cartId)
       const response = await fetch(`/carts/${cartId}/purchase`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ /* datos si es necesario */ }),
+        
       });
 
       const data = await response.json();
-
+      console.log(data)
       if (data.success) {
         alert('Compra exitosa. ID del ticket: ' + data.ticketId);
         // Puedes redirigir a una nueva página o realizar otras acciones según tu aplicación

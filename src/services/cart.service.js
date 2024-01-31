@@ -27,6 +27,7 @@ export class CartService{
     async purchaseCart(cartId) {
         try {
           const cart = await cartDao.getCartById(cartId);
+          
     
           if (!cart) {
             return { status: 404, response: { error: 'Carrito no encontrado' } };

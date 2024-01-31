@@ -25,21 +25,16 @@ const Ticket = mongoose.model('Ticket', ticketSchema);
 
 
 
-export class ticketDao{
+export class TicketDao{
 
-    async createTicket(amount, purchaser) {
-        try {
-          const ticketGuardado = await Ticket.create({
-            amount,
-            purchaser,
-          });
-    
-          console.log('Ticket creado con éxito:', ticketGuardado);
-          return ticketGuardado;
-        } catch (error) {
-          console.error('Error al crear el ticket:', error);
-          throw error;
-        }
+    async createTicket(ticketData) {
+      try {
+        const ticket = await Ticket.create(ticketData);
+        return ticket;
+      } catch (error) {
+        throw new Error('Error saving ticket');
       }
-
+    }
 }
+
+
