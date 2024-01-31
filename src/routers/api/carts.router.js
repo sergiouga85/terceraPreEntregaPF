@@ -9,7 +9,7 @@ cartsRouter.get('/', obtenerCarritos);
 cartsRouter.get('/:cid', obtenerCarritoPorId);
 cartsRouter.post('/', crearCarrito);
 cartsRouter.put('/:cid/producto/:pid', actualizarCantidadProductoEnCarrito);
-cartsRouter.put('/:cid/add/:pid', agregarProductoAlCarrito);
+cartsRouter.put('/:cid/add/:pid',passportAuth,usersOnly,agregarProductoAlCarrito);
 cartsRouter.delete('/:cid', eliminarCarrito);
 cartsRouter.delete('/:cid/producto/:pid', eliminarProductoDelCarrito);
 cartsRouter.post('/:cid/purchase', purchaseCart );

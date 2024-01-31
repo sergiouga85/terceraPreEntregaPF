@@ -47,6 +47,10 @@ webRouter.get('/carritos', (req, res) => {
   res.render('carritos.handlebars',{ titulo: 'carritos' })
 })
 
+webRouter.get('/chat', (req, res) => {
+  res.render('chat.handlebars',{ titulo: 'chat' })
+})
+
 webRouter.get('/carritosActivos', (req, res) => {
   res.render('carritosActivos.handlebars',{ titulo: 'Elegir Carritos' })
 })

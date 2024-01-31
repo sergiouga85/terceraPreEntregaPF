@@ -166,3 +166,32 @@ buttonLogout?.addEventListener('click', async event => {
     console.log(err.message)
   }
 })
+
+
+
+async function realizarCompra() {
+    try {
+
+      const cartId = JSON.parse(localStorage.getItem('carrito'))  
+
+      const response = await fetch(`/carts/${cartId}/purchase`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ /* datos si es necesario */ }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert('Compra exitosa. ID del ticket: ' + data.ticketId);
+        // Puedes redirigir a una nueva página o realizar otras acciones según tu aplicación
+      } else {
+        alert('Error en la compra. Productos no disponibles: ' + data.failedProducts.join(', '));
+      }
+    } catch (error) {
+      console.error('Error en la compra:', error);
+      alert('Error en la compra. Consulta la consola para más detalles.');
+    }
+  }

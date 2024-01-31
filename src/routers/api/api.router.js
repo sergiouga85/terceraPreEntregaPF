@@ -6,6 +6,7 @@ import { errorHandler } from '../../middlewares/errorHandler.js'
 import { cartsRouter } from './carts.router.js'
 import {productosRouter} from './productos.router.js'
 import {businessRouter} from './business.router.js'
+import { chatRouter } from './chat.router.js'
 
 
 export const apiRouter = Router()
@@ -19,6 +20,7 @@ apiRouter.use('/users', usersRouter)
 apiRouter.use('/sessions', sessionsRouter)
 apiRouter.use('/productos', productosRouter)
 apiRouter.use('/carts', cartsRouter)
+apiRouter.use('/chat', chatRouter)
 apiRouter.use('/business', businessRouter)
 
 

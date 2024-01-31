@@ -1,26 +1,28 @@
-import { Schema, model } from 'mongoose'
-import { randomUUID } from 'crypto'
+import { Schema, model } from 'mongoose';
+import { randomUUID } from 'crypto';
 
 const schemaCarrito = new Schema({
-    _id: { type: String, default: randomUUID },
-    status: { type: Boolean, default: true},
-    carrito: [{ 
-        productID: { type: String, ref: 'products' }, 
-        cant: { type: Number }
-        }]
+  _id: { type: String, default: randomUUID },
+  status: { type: Boolean, default: true },
+  carrito: [
+    {
+      productID: { type: String, ref: 'products' },
+      cant: { type: Number },
+    },
+  ],
+  userId: { type: String, required: true }, // Agregamos un campo para almacenar el ID del usuario asociado al carrito
 }, {
-    strict: 'throw',
-        versionKey: false,
-            methods: { }
-})
+  strict: 'throw',
+  versionKey: false,
+  methods: {},
+});
 
 schemaCarrito.pre('find', function (next) {
-    this.populate('carrito.$.productID')
-    next()
-})
+  this.populate('carrito.$.productID');
+  next();
+});
 
-export const Carrito = model('carrito', schemaCarrito)
-
+export const Carrito = model('carrito', schemaCarrito);
 
 //---------------------------------------------------
 
@@ -30,7 +32,7 @@ export class CartDao {
 
   async getCartById(cartId) {
     try{
-      const cart= await Carrito.findById(cartId).populate('products.product');
+      const cart= await Carrito.findById(cartId).populate('carrito.productID');
       return cart
     }catch(error){
       throw new Error(`Error al obtener los carritos: ${error.message}`);
@@ -149,7 +151,7 @@ async actualizarCantidadProductoEnCarrito(carritoId, productoId, nuevaCantidad) 
 
   async finalizePurchase(cartId) {
     try {
-      const cart = await Carrito.findById(cartId).populate('products.product');
+      const cart = await Carrito.findById(cartId).populate('carrito.productID');
       if (!cart) {
         throw new Error('Carrito no encontrado');
       }
