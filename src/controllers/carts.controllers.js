@@ -112,6 +112,8 @@ export const  purchaseCart= async (req, res)=> {
         return ticket;
       };
 
+      //verifica la cantidad de stock del producto y actualiza
+
       const updateProductStock = async (productId, quantity) => {
         const product = await productDao.obtenerProductoPorId(productId);
 
@@ -125,6 +127,8 @@ export const  purchaseCart= async (req, res)=> {
         }
       };
 
+
+      
     const processPurchase = async () => {
         const ticket = await createTicket();
 
