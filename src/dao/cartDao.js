@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { randomUUID } from 'crypto';
+import { productDao } from './index.js';
 
 const schemaCarrito = new Schema({
   _id: { type: String, default: randomUUID },
@@ -80,35 +81,51 @@ async actualizarCantidadProductoEnCarrito(carritoId, productoId, nuevaCantidad) 
   };
 
 // Añadir un producto al carrito o incrementar la cantidad si ya existe
-    async agregarProductoAlCarrito(carritoId, productoId){
-    try {
-        const productExist = await Carrito.find({
-            _id: carritoId,
-            carrito: { $elemMatch: { productID: productoId } }
-        });
+async  agregarProductoAlCarrito(carritoId, productoId) {
+  try {
+    // Obtener el producto que se va a agregar al carrito
+    const producto = await productDao.obtenerProductoPorId(productoId);
 
-        if (productExist.length > 0) {
-            // Producto ya existe en el carrito, incrementar cantidad
-            const updProduct = await Carrito.findByIdAndUpdate(
-                carritoId,
-                { $inc: { "carrito.$[elem].cant": 1 }},
-                { arrayFilters: [{ "elem.productID": productoId }]},
-                { new: true }
-            );
-            return updProduct;
-        } else {
-            // Añadir nuevo producto al carrito
-            const addProduct = await Carrito.findByIdAndUpdate(
-                carritoId,
-                { $push: { carrito: { productID: productoId, cant: 1 } } },
-                { new: true }
-            ).lean();
-            return addProduct;
-        }
-    } catch (error) {
-        throw new Error(`Error al agregar el producto al carrito: ${error.message}`);
+    if (!producto) {
+      throw new Error('Producto no encontrado');
     }
-  };
+
+    // Verificar si el producto ya existe en el carrito
+    const productExist = await Carrito.findOne({
+      _id: carritoId,
+      'carrito.productID': productoId
+    });
+
+    if (productExist) {
+      // Producto ya existe en el carrito, incrementar cantidad y actualizar totalAmount
+      const updProduct = await Carrito.findOneAndUpdate(
+        {
+          _id: carritoId,
+          'carrito.productID': productoId
+        },
+        {
+          $inc: { 'carrito.$.cant': 1 },
+          $inc: { totalAmount: producto.price } // Incrementar el totalAmount basado en el precio del producto
+        },
+        { new: true }
+      );
+      return updProduct;
+    } else {
+      // Añadir nuevo producto al carrito y actualizar totalAmount
+      const addProduct = await Carrito.findByIdAndUpdate(
+        carritoId,
+        {
+          $push: { carrito: { productID: productoId, cant: 1 } },
+          $inc: { totalAmount: producto.price } // Incrementar el totalAmount basado en el precio del producto
+        },
+        { new: true }
+      );
+      return addProduct;
+    }
+  } catch (error) {
+    throw new Error(`Error al agregar el producto al carrito: ${error.message}`);
+  }
+}
 
 // Eliminar un carrito por ID
   async eliminarCarrito(carritoId){

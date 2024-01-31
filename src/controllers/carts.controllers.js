@@ -87,91 +87,81 @@ export const eliminarProductoDelCarrito = async (req, res) => {
     }
 }
 
-export const  purchaseCart= async (req, res)=> {
+
+export const purchaseCart = async (req, res) => {
     try {
       const cartId = req.params.cid;
       const cart = await cartDao.obtenerCarritoPorId(cartId);
-
-      const failedProductIds = [];
-
-      const createTicket = async () => {
-        const ticketData = {
-          code: generateUniqueCode(),
-          purchase_datetime: new Date(),
-          amount: cart.totalAmount,
-          purchaser: cart.userEmail,
-        };
-
-        const ticket = await TicketService.generateTicket(
-          ticketData.code,
-          ticketData.purchase_datetime,
-          ticketData.amount,
-          ticketData.purchaser
-        );
-
-        return ticket;
-      };
-
-      //verifica la cantidad de stock del producto y actualiza
-
-      const updateProductStock = async (productId, quantity) => {
-        const product = await productDao.obtenerProductoPorId(productId);
-
-        if (product.stock >= quantity) {
-          product.stock -= quantity;
-          await product.save();
-          return true;
-        } else {
-          failedProductIds.push(productId);
-          return false;
-        }
-      };
-
-
-      
-    const processPurchase = async () => {
-        const ticket = await createTicket();
-
-        for (const cartProduct of cart.carrito) {
-          const success = await updateProductStock(
-            cartProduct.productID,
-            cartProduct.cant
-          );
-
-          if (!success) {
-            continue;
-          }
-
-         
-        }
-
-        // Update the cart with failed products
-        cart.carrito = cart.carrito.filter((cartProduct) =>
-        failedProductIds.includes(cartProduct.productID)
-        );
-        await cartDao.saveCart(cart);
   
-        return { ticket, failedProductIds };
-    };
-
-      const result = await processPurchase();
-
-      res.status(200).json(result);
+      const failedProductIds = [];
+  
+      const ticket = await createTicket(cart);
+  
+      await processProducts(cart, failedProductIds);
+  
+      await updateCartAfterPurchase(cart, failedProductIds);
+  
+      res.status(200).json({ ticket, failedProductIds });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
-}
-
-function generateUniqueCode() {
+};
+  
+  async function createTicket(cart) {
+    const ticketData = {
+      code: generateUniqueCode(),
+      purchase_datetime: new Date(),
+      amount: cart.totalAmount,
+      purchaser: cart.user,
+    };
+  
+    const ticket = await TicketService.generateTicket(
+      ticketData.code,
+      ticketData.purchase_datetime,
+      ticketData.amount,
+      ticketData.purchaser
+    );
+  
+    return ticket;
+  }
+  
+  async function processProducts(cart, failedProductIds) {
+    for (const cartProduct of cart.carrito) {
+      const success = await updateProductStock(
+        cartProduct.productID,
+        cartProduct.cant,
+        failedProductIds
+      );
+  
+      if (!success) {
+        continue;
+      }
+    }
+  }
+  
+  async function updateProductStock(productId, quantity, failedProductIds) {
+    const product = await productDao.obtenerProductoPorId(productId);
+  
+    if (product.stock >= quantity) {
+      product.stock -= quantity;
+      await product.save();
+      return true;
+    } else {
+      failedProductIds.push(productId);
+      return false;
+    }
+  }
+  
+  async function updateCartAfterPurchase(cart, failedProductIds) {
+    const failedProducts = cart.carrito.filter((cartProduct) =>
+      failedProductIds.includes(cartProduct.productID)
+    );
+  
+    cart.carrito = failedProducts;
+    await cartDao.saveCart(cart);
+  }
+  
+  function generateUniqueCode() {
     return uuidv4();
-}
-
-
-
-
-  
-      
-  
-        
-     
+  }
