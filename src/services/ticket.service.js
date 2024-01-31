@@ -1,8 +1,4 @@
-
-
-import {ticketDao} from '../dao/index.js'
-
-
+import { ticketDao } from '../dao/index.js'
 
 export class TicketService {
   static async generateTicket(code, purchaseDatetime, amount, purchaser) {
@@ -13,10 +9,7 @@ export class TicketService {
         amount,
         purchaser,
       };
-      const newTicket= await ticketDao.createTicket(ticketData)
-      //const ticket = new Ticket(ticketData);
-      //await ticket.save();
-
+      const newTicket = await ticketDao.createTicket(ticketData)
       return newTicket;
     } catch (error) {
       console.error(error);

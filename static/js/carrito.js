@@ -5,17 +5,17 @@ document.getElementById('delCarrito').addEventListener('click', deleteCart)
 getCarritoInfo()
 
 function getCarritoInfo() {
-    document.getElementById('carritoID').innerText = `Carrito ID ${idCarrito}`
-    const targetDOM = document.getElementById('listaProductos')
-    targetDOM.innerHTML = ''
-    targetDOM.addEventListener('click', botonera)
-    fetch(rutaFetch + idCarrito)
-        .then(resp => resp.json())
-        .then(data => {
-            console.log(data)
-            for (elem of data.carrito) {
-                const newElement = document.createElement('tr')
-                newElement.innerHTML = `
+  document.getElementById('carritoID').innerText = `Carrito ID ${idCarrito}`
+  const targetDOM = document.getElementById('listaProductos')
+  targetDOM.innerHTML = ''
+  targetDOM.addEventListener('click', botonera)
+  fetch(rutaFetch + idCarrito)
+    .then(resp => resp.json())
+    .then(data => {
+      console.log(data)
+      for (elem of data.carrito) {
+        const newElement = document.createElement('tr')
+        newElement.innerHTML = `
             <th scope="row" style="vertical-align: middle;">${elem.productID.title}</th>
             <td style="vertical-align: middle;">${elem.productID.description}</td>
             <td style="vertical-align: middle;">${elem.productID.category}</td>
@@ -34,81 +34,81 @@ function getCarritoInfo() {
                 </button>
             </td>
             `
-                targetDOM.appendChild(newElement)
-            }
-        })
+        targetDOM.appendChild(newElement)
+      }
+    })
 }
 
 function botonera(e) {
-    const selectedId = e.target.id
-    const action = selectedId.substring(0, 3)
-    const id = selectedId.substring(3)
+  const selectedId = e.target.id
+  const action = selectedId.substring(0, 3)
+  const id = selectedId.substring(3)
 
-    if (action === 'del') {
-        // /:cid/producto/:pid
-        const rutaDelete = rutaFetch + idCarrito + '/producto/' + id
-        console.log(rutaDelete)
-        fetch(rutaDelete, {
-            method: 'DELETE'
-        })
-            .then(resp => resp.json())
-            .then(data => {
+  if (action === 'del') {
+    // /:cid/producto/:pid
+    const rutaDelete = rutaFetch + idCarrito + '/producto/' + id
+    console.log(rutaDelete)
+    fetch(rutaDelete, {
+      method: 'DELETE'
+    })
+      .then(resp => resp.json())
+      .then(data => {
 
-                Swal.fire({
-                    title: "Producto Eliminado!",
-                    icon: "success",
-                    color: "write"
-                  });
-                
-                getCarritoInfo()
-            })
-    } else if (action === 'upd') {
-        renderEditFilds(e, id)
-    } else if (action === 'sav') {
-        console.log('guardar')
-        const valorUpdate = document.getElementById('edit' + id).value
-        console.log(valorUpdate)
-        const rutaUpdate = rutaFetch + idCarrito + '/producto/' + id
-        console.log(rutaUpdate)
-        fetch(rutaUpdate, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ "cant": parseInt(valorUpdate) })
-        })
-            .then(resp => resp.json())
-            .then(dato => {
-                console.log(dato)
-            })
-        window.location.reload()
-    }
+        Swal.fire({
+          title: "Producto Eliminado!",
+          icon: "success",
+          color: "write"
+        });
+
+        getCarritoInfo()
+      })
+  } else if (action === 'upd') {
+    renderEditFilds(e, id)
+  } else if (action === 'sav') {
+    console.log('guardar')
+    const valorUpdate = document.getElementById('edit' + id).value
+    console.log(valorUpdate)
+    const rutaUpdate = rutaFetch + idCarrito + '/producto/' + id
+    console.log(rutaUpdate)
+    fetch(rutaUpdate, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ "cant": parseInt(valorUpdate) })
+    })
+      .then(resp => resp.json())
+      .then(dato => {
+        console.log(dato)
+      })
+    window.location.reload()
+  }
 }
 
 function renderEditFilds(domElement, id) {
-    let targetEdit
-    let targetOrigin
-    let nodo
-    if (domElement.target.nodeName === 'path') {
-        nodo = 'path'
-        targetOrigin = domElement.target.parentNode.parentNode.parentNode
-        targetEdit = targetOrigin.previousElementSibling
-    }
-    if (domElement.target.nodeName === 'svg') {
-        nodo = 'svg'
-        targetOrigin = domElement.target.parentNode.parentNode
-        targetEdit = targetOrigin.previousElementSibling
-    }
-    if (domElement.target.nodeName === 'BUTTON') {
-        nodo = 'button'
-        targetOrigin = domElement.target.parentNode
-        targetEdit = targetOrigin.previousElementSibling
-    }
-    const value = targetEdit.innerText
-    targetEdit.innerHTML = `
+  let targetEdit
+  let targetOrigin
+  let nodo
+  if (domElement.target.nodeName === 'path') {
+    nodo = 'path'
+    targetOrigin = domElement.target.parentNode.parentNode.parentNode
+    targetEdit = targetOrigin.previousElementSibling
+  }
+  if (domElement.target.nodeName === 'svg') {
+    nodo = 'svg'
+    targetOrigin = domElement.target.parentNode.parentNode
+    targetEdit = targetOrigin.previousElementSibling
+  }
+  if (domElement.target.nodeName === 'BUTTON') {
+    nodo = 'button'
+    targetOrigin = domElement.target.parentNode
+    targetEdit = targetOrigin.previousElementSibling
+  }
+  const value = targetEdit.innerText
+  targetEdit.innerHTML = `
     <input type="text" class="form-control" aria-label="Username" aria-describedby="basic-addon1" id='edit${id}' value=${value}>
     `
-    targetOrigin.innerHTML = `
+  targetOrigin.innerHTML = `
     <button type="button" class="btn btn-secondary" id="sav${id}">
     <svg id="sav${id}" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy" viewBox="0 0 16 16">
       <path id="sav${id}" d="M11 2H9v3h2z"/>
@@ -119,32 +119,26 @@ function renderEditFilds(domElement, id) {
 }
 
 function deleteCart(e) {
-    fetch(rutaFetch + idCarrito, {
-        method: 'DELETE'
+  fetch(rutaFetch + idCarrito, {
+    method: 'DELETE'
+  })
+    .then(resp => resp.json())
+    .then(data => {
+
+      Swal.fire({
+        title: "Carrito Eliminado!",
+        icon: "success",
+        color: "write"
+      });
+
+      window.location = '/productos'
     })
-        .then(resp => resp.json())
-        .then(data => {
-
-            Swal.fire({
-                title: "Carrito Eliminado!",
-                icon: "success",
-                color: "write"
-              });
-            
-            window.location = '/productos'
-        })
-        
 }
-
 
 const buttonLogout = document.getElementById('logout')
 
 buttonLogout?.addEventListener('click', async event => {
   event.preventDefault()
-
-  // @ts-ignore
-  //const formDataEncoded = new URLSearchParams(new FormData(formLogin))
-
   try {
     const res = await fetch(
       '/api/sessions/current',
@@ -152,13 +146,10 @@ buttonLogout?.addEventListener('click', async event => {
         method: 'DELETE',
       },
     )
-
-    // Verificar si la solicitud fue exitosa (código de respuesta 2xx)
     if (res.ok) {
-      // Redirigir a la nueva página
       window.location.href = '/login'
     } else {
-      // Manejar otros casos si es necesario
+
       console.log('La solicitud no fue exitosa. Código de respuesta:', res.status)
     }
 
@@ -166,12 +157,9 @@ buttonLogout?.addEventListener('click', async event => {
     console.log(err.message)
   }
 })
-
-
-
 async function compra() {
   try {
-    
+
     const cartId = JSON.parse(localStorage.getItem('carrito'));
     console.log(cartId);
     const response = await fetch(`api/carts/${cartId}/purchase`, {
@@ -189,12 +177,21 @@ async function compra() {
         throw new Error(`Error en la solicitud: ${response.status} ${response.statusText}`);
       }
     }
-    //location.reload()
-    
     const data = await response.json();
-    
+
     if (data) {
-      alert('Compra exitosa. ID del ticket: ' + data.ticket.code);
+
+      Swal.fire({
+        title: 'Compra exitosa!',
+        text: `ID del ticket: +${data.ticket.code}`,
+        icon: 'success',
+        confirmButtonText: 'Aceptar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = './productos'
+        }
+      });
+      localStorage.removeItem('carrito');
     } else {
       const errorMessage = data.failedProducts ? 'Productos no disponibles: ' + data.failedProducts.join(', ') : 'Error desconocido en la compra';
       alert('Error en la compra. ' + errorMessage);
@@ -207,12 +204,11 @@ async function compra() {
 
 async function realizarCompra() {
 
-try {
-  await compra();
-} catch (error) {
-  // Manejar errores generales
-  console.error('Error general:', error);
-  alert('Error general en la compra. Consulta la consola para más detalles.'); 
-}
+  try {
+    await compra();
+  } catch (error) {
+    console.error('Error general:', error);
+    alert('Error general en la compra. Consulta la consola para más detalles.');
+  }
 
 }
