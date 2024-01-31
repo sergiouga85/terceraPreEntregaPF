@@ -17,7 +17,7 @@ export class TicketService {
       //const ticket = new Ticket(ticketData);
       //await ticket.save();
 
-      return ticket;
+      return newTicket;
     } catch (error) {
       console.error(error);
       throw new Error('Error generating ticket');

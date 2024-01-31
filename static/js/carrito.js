@@ -170,28 +170,44 @@ buttonLogout?.addEventListener('click', async event => {
 
 
 async function realizarCompra() {
-    try {
+  try {
+    // Obtener el ID del carrito desde el almacenamiento local
+    const cartId = JSON.parse(localStorage.getItem('carrito'));
+    console.log(cartId);
 
-      const cartId = JSON.parse(localStorage.getItem('carrito'))  
-      console.log(cartId)
-      const response = await fetch(`/carts/${cartId}/purchase`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        
-      });
+    // Realizar la solicitud POST al servidor
+    const response = await fetch(`api/carts/${cartId}/purchase`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
+    // Verificar el código de estado de la respuesta
+    if (!response.ok) {
       const data = await response.json();
-      console.log(data)
-      if (data.success) {
-        alert('Compra exitosa. ID del ticket: ' + data.ticketId);
-        // Puedes redirigir a una nueva página o realizar otras acciones según tu aplicación
+      if (data && data.error) {
+        throw new Error(`Error en la solicitud: ${data.error}`);
       } else {
-        alert('Error en la compra. Productos no disponibles: ' + data.failedProducts.join(', '));
+        throw new Error(`Error en la solicitud: ${response.status} ${response.statusText}`);
       }
-    } catch (error) {
-      console.error('Error en la compra:', error);
-      alert('Error en la compra. Consulta la consola para más detalles.');
     }
+
+    // Analizar la respuesta JSON
+    const data = await response.json();
+
+    // Verificar el éxito de la compra en los datos analizados
+    if (data.success) {
+      alert('Compra exitosa. ID del ticket: ' + data.ticketId);
+      // Puedes redirigir a una nueva página o realizar otras acciones según tu aplicación
+    } else {
+      // Verificar si failedProducts está definido antes de intentar unirlo
+      const errorMessage = data.failedProducts ? 'Productos no disponibles: ' + data.failedProducts.join(', ') : 'Error desconocido en la compra';
+      alert('Error en la compra. ' + errorMessage);
+    }
+  } catch (error) {
+    // Manejar errores generales
+    console.error('Error en la compra:', error.message);
+    alert('Error en la compra. Consulta la consola para más detalles.');
   }
+}

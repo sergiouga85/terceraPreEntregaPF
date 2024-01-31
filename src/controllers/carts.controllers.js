@@ -96,6 +96,7 @@ export const purchaseCart = async (req, res) => {
       const failedProductIds = [];
   
       const ticket = await createTicket(cart);
+      console.log(ticket)
   
       await processProducts(cart, failedProductIds);
   
@@ -156,7 +157,7 @@ export const purchaseCart = async (req, res) => {
   async function updateCartAfterPurchase(cart, failedProductIds) {
     const failedProducts = cart.carrito.filter((cartProduct) =>
       failedProductIds.includes(cartProduct.productID)
-    );
+  );
   
     cart.carrito = failedProducts;
     await cartDao.saveCart(cart);
