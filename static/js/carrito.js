@@ -169,13 +169,11 @@ buttonLogout?.addEventListener('click', async event => {
 
 
 
-async function realizarCompra() {
+async function compra() {
   try {
-    // Obtener el ID del carrito desde el almacenamiento local
+    
     const cartId = JSON.parse(localStorage.getItem('carrito'));
     console.log(cartId);
-
-    // Realizar la solicitud POST al servidor
     const response = await fetch(`api/carts/${cartId}/purchase`, {
       method: 'POST',
       headers: {
@@ -183,7 +181,6 @@ async function realizarCompra() {
       },
     });
 
-    // Verificar el código de estado de la respuesta
     if (!response.ok) {
       const data = await response.json();
       if (data && data.error) {
@@ -192,22 +189,30 @@ async function realizarCompra() {
         throw new Error(`Error en la solicitud: ${response.status} ${response.statusText}`);
       }
     }
-
-    // Analizar la respuesta JSON
+    //location.reload()
+    
     const data = await response.json();
-
-    // Verificar el éxito de la compra en los datos analizados
-    if (data.success) {
-      alert('Compra exitosa. ID del ticket: ' + data.ticketId);
-      // Puedes redirigir a una nueva página o realizar otras acciones según tu aplicación
+    
+    if (data) {
+      alert('Compra exitosa. ID del ticket: ' + data.ticket.code);
     } else {
-      // Verificar si failedProducts está definido antes de intentar unirlo
       const errorMessage = data.failedProducts ? 'Productos no disponibles: ' + data.failedProducts.join(', ') : 'Error desconocido en la compra';
       alert('Error en la compra. ' + errorMessage);
     }
   } catch (error) {
-    // Manejar errores generales
     console.error('Error en la compra:', error.message);
     alert('Error en la compra. Consulta la consola para más detalles.');
   }
+}
+
+async function realizarCompra() {
+
+try {
+  await compra();
+} catch (error) {
+  // Manejar errores generales
+  console.error('Error general:', error);
+  alert('Error general en la compra. Consulta la consola para más detalles.'); 
+}
+
 }
