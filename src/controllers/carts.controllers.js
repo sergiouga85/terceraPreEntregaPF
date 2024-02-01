@@ -1,8 +1,10 @@
-import { cartDao } from '../dao/index.js';
+import { cartDao, usersDao } from '../dao/index.js';
 import {CartService} from '../services/cart.service.js';
 import { TicketService } from '../services/ticket.service.js';
 import { productDao } from '../dao/index.js';
 import { v4 as uuidv4 } from 'uuid';
+import { emailService } from '../services/email.service.js';
+
 
 
 // Obtener todos los carritos
@@ -94,6 +96,11 @@ export const purchaseCart = async (req, res) => {
       const cart = await cartDao.obtenerCarritoPorId(cartId);
   
       const failedProductIds = [];
+      const username=cart.user
+
+      const user= await usersDao.readOne({username})
+      const email= user.email
+      console.log(email)
   
       const ticket = await createTicket(cart);
       console.log(ticket)
@@ -101,6 +108,13 @@ export const purchaseCart = async (req, res) => {
       await processProducts(cart, failedProductIds);
   
       await updateCartAfterPurchase(cart, failedProductIds);
+
+      await emailService.send(
+        user.email,
+        'Gracias por su compra',
+        'Le informamos que ha sido realizada con exito!',
+        `Nro ticket: ${ticket.code}`
+      )
   
       res.status(200).json({ ticket, failedProductIds });
     } catch (error) {
