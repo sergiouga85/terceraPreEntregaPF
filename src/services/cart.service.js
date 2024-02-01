@@ -1,81 +1,125 @@
-import {cartDao} from '../dao/index.js';
+import { cartDao, usersDao } from '../dao/index.js'
+import { TicketService } from './ticket.service.js'
+import { emailService } from './email.service.js'
+import { productDao } from '../dao/index.js'
+import { v4 as uuidv4 } from 'uuid';
 
-export class CartService{
 
-    async actualizarCantidadProductoEnCarrito(carritoId, productoId, nuevaCantidad){
-        try {
-            // Verificar que la nueva cantidad sea un número válido y no sea negativa
-            const cantidadNumerica = parseInt(nuevaCantidad);
-            if (isNaN(cantidadNumerica) || cantidadNumerica < 0) {
-                throw new Error('La nueva cantidad debe ser un número válido y no puede ser negativa.');
-            }
 
-            // Verificar que el producto exista en el carrito antes de actualizar la cantidad
-            const carrito = await cartDao.obtenerCarritoPorId(carritoId);
-            const productoEnCarrito = carrito.carrito.find(item => item._id.toString() === productoId);
-            if (!productoEnCarrito) {
-                throw new Error('El producto no existe en el carrito.');
-            }
+class CartService {
 
-            // Actualizar la cantidad usando el DAO
-            return await cartDao.actualizarCantidadProductoEnCarrito(carritoId, productoId, cantidadNumerica);
-        } catch (error) {
-            throw new Error(`Error en el servicio de carritos: ${error.message}`);
-        }
+  async actualizarCantidadProductoEnCarrito(carritoId, productoId, nuevaCantidad) {
+    try {
+      const cantidadNumerica = parseInt(nuevaCantidad);
+      if (isNaN(cantidadNumerica) || cantidadNumerica < 0) {
+        throw new Error('La nueva cantidad debe ser un número válido y no puede ser negativa.');
+      }
+
+      const carrito = await cartDao.obtenerCarritoPorId(carritoId);
+      const productoEnCarrito = carrito.carrito.find(item => item._id.toString() === productoId);
+      if (!productoEnCarrito) {
+        throw new Error('El producto no existe en el carrito.');
+      }
+
+      return await cartDao.actualizarCantidadProductoEnCarrito(carritoId, productoId, cantidadNumerica);
+    } catch (error) {
+      console.error(`Error en el servicio de carritos al actualizar la cantidad del producto: ${error.message}`);
+      throw new Error('Error al actualizar la cantidad del producto en el carrito.');
+    }
+  }
+
+  async purchaseCart(cartId) {
+    try {
+      const cart = await cartDao.obtenerCarritoPorId(cartId);
+      const failedProductIds = [];
+      const username = cart.user;
+
+      const user = await usersDao.readOne({ username });
+      const email = user.email;
+
+      const ticket = await this.createTicket(cart);
+
+      await this.processProducts(cart, failedProductIds);
+
+      await this.updateCartAfterPurchase(cart, failedProductIds);
+
+      await emailService.send(
+        user.email,
+        'Gracias por su compra',
+        'Le informamos que ha sido realizada con éxito!',
+        `Nro ticket: ${ticket.code}`
+      );
+
+      return { ticket, failedProductIds };
+    } catch (error) {
+      console.error(`Error en el servicio de carritos al realizar la compra: ${error.message}`);
+      throw new Error('Error al realizar la compra del carrito.');
+    }
+  }
+
+  async createTicket(cart) {
+    const ticketData = {
+      code: uuidv4(), // Asegúrate de que uuidv4 esté importado
+      purchase_datetime: new Date(),
+      amount: cart.totalAmount,
+      purchaser: cart.user,
     };
 
-    async purchaseCart(cartId) {
-        try {
-          const cart = await cartDao.getCartById(cartId);
-          
-    
-          if (!cart) {
-            return { status: 404, response: { error: 'Carrito no encontrado' } };
-          }
-    
-          const failedProductIds = [];
-    
-          for (const cartProduct of cart.products) {
-            const productId = cartProduct.product._id;
-            const requestedQuantity = cartProduct.quantity;
-    
-            const product = await cartDao.getProductById(productId);
-    
-            if (!product) {
-              failedProductIds.push(productId);
-            } else if (product.stock >= requestedQuantity) {
-              // Restar la cantidad del stock del producto
-              product.stock -= requestedQuantity;
-              await cartDao.updateProduct(product);
-            } else {
-              failedProductIds.push(productId);
-            }
-          }
-    
-          // Generar un ticket con los datos de la compra
-          const ticketResponse = await TicketService.generateTicket(cart);
-    
-          // Limpiar el carrito después de la compra
-          cart.products = cart.products.filter((cartProduct) =>
-            failedProductIds.includes(cartProduct.product.toString())
-          );
-    
-          await cartDao.updateCart(cart);
-    
-          if (failedProductIds.length > 0) {
-            return {
-              status: 400,
-              response: {
-                message: 'Algunos productos no pudieron ser procesados en la compra.',
-                failedProductIds,
-              },
-            };
-          } else {
-            return { status: 200, response: { message: 'Compra realizada con éxito', ticket: ticketResponse } };
-          }
-        } catch (error) {
-          console.error(error);
-          return { status: 500, response: { error: 'Error interno del servidor' } };
-        }
+    const ticket = await TicketService.generateTicket(
+      ticketData.code,
+      ticketData.purchase_datetime,
+      ticketData.amount,
+      ticketData.purchaser
+    );
+
+    return ticket;
+  }
+
+  async processProducts(cart, failedProductIds) {
+    for (const cartProduct of cart.carrito) {
+      const success = await this.updateProductStock(
+        cartProduct.productID,
+        cartProduct.cant,
+        failedProductIds
+      );
+
+      if (!success) {
+        continue;
       }
+    }
+  }
+
+  async updateProductStock(productId, quantity, failedProductIds) {
+    try {
+      const product = await productDao.obtenerProductoPorId(productId);
+
+      if (product.stock >= quantity) {
+        product.stock -= quantity;
+        await product.save();
+        return true;
+      } else {
+        failedProductIds.push(productId);
+        return false;
+      }
+    } catch (error) {
+      console.error(`Error en el servicio de carritos al actualizar el stock del producto: ${error.message}`);
+      throw new Error('Error al actualizar el stock del producto.');
+    }
+  }
+
+  async updateCartAfterPurchase(cart, failedProductIds) {
+    try {
+      const failedProducts = cart.carrito.filter((cartProduct) =>
+        failedProductIds.includes(cartProduct.productID)
+      );
+
+      cart.carrito = failedProducts;
+      await cartDao.saveCart(cart);
+    } catch (error) {
+      console.error(`Error en el servicio de carritos al actualizar el carrito después de la compra: ${error.message}`);
+      throw new Error('Error al actualizar el carrito después de la compra.');
+    }
+  }
 }
+
+export const cartService= new CartService()
